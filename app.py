@@ -7,13 +7,18 @@ import streamlit as st
 from sqlalchemy import text
 
 # ───────────────────────── Configuración ─────────────────────────
-st.set_page_config(page_title="Control de caldera · Kenzo Jeans", page_icon="🔥", layout="wide")
+st.set_page_config(
+    page_title="Control de caldera · Kenzo Jeans",
+    page_icon="🔥",
+    layout="wide"
+)
+
+# Logo de la empresa (asegúrate de subir tu archivo de imagen 'logo.png' a tu repo de GitHub o usa una URL)
+st.logo("logo.png", icon_image="logo.png")
 
 TZ = ZoneInfo("America/Bogota")
 NIVELES = ["Bajo", "Normal", "Alto"]
 
-# AJUSTAR: unidad y rango de operación de la presión de vapor.
-# Los valores de abajo son de EJEMPLO, reemplázalos por los de tu caldera.
 PRESION_UNIDAD = "psi"
 PRESION_MIN = 80.0
 PRESION_MAX = 120.0
@@ -32,7 +37,6 @@ def ejecutar(sql, params):
 
 
 def avisar(tipo, mensaje):
-    """Guarda un mensaje para mostrarlo después del st.rerun()."""
     st.session_state["aviso"] = (tipo, mensaje)
 
 
@@ -80,7 +84,6 @@ def pestana_registro():
 
     jor = consultar("SELECT * FROM jornadas WHERE fecha = :f", {"f": fecha})
 
-    # 1) Sin jornada: abrirla
     if jor.empty:
         st.info("Todavía no hay jornada para esta fecha. Ábrela para empezar a registrar.")
         with st.form("apertura"):
@@ -101,7 +104,6 @@ def pestana_registro():
                     st.rerun()
         return
 
-    # 2) Jornada existente
     j = jor.iloc[0]
     jid = int(j["id"])
     cerrada = pd.notna(j["gas_fin"])
@@ -172,7 +174,6 @@ def pestana_registro():
                     avisar("success", "Jornada cerrada.")
                     st.rerun()
 
-    # Detalle del día
     st.divider()
     st.subheader("Registros del día")
     lect = consultar(
@@ -228,28 +229,31 @@ def pestana_dashboard():
             st.caption("Aún no hay jornadas cerradas en este periodo.")
         else:
             fig = px.bar(c, x="fecha", y="consumo_gas", labels={"fecha": "", "consumo_gas": "Consumo"})
+            fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
             st.plotly_chart(fig, use_container_width=True)
     with g2:
         st.subheader("Purgas de fondo por día")
         fig = px.bar(purg, x="fecha", y="purgas", labels={"fecha": "", "purgas": "Purgas"})
+        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig, use_container_width=True)
 
     if not lect.empty:
         st.subheader("Presión de vapor")
         fig = px.line(lect, x="fecha_hora", y="presion_vapor", markers=True,
                       labels={"fecha_hora": "", "presion_vapor": f"Presión ({PRESION_UNIDAD})"})
-        fig.add_hline(y=PRESION_MIN, line_dash="dash", line_color="#c0392b")
-        fig.add_hline(y=PRESION_MAX, line_dash="dash", line_color="#c0392b")
+        fig.add_hline(y=PRESION_MIN, line_dash="dash", line_color="#e74c3c")
+        fig.add_hline(y=PRESION_MAX, line_dash="dash", line_color="#e74c3c")
+        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)')
         st.plotly_chart(fig, use_container_width=True)
 
         st.subheader("Nivel de agua")
         fig = px.scatter(
             lect, x="fecha_hora", y="nivel_agua", color="nivel_agua",
             category_orders={"nivel_agua": NIVELES},
-            color_discrete_map={"Bajo": "#c0392b", "Normal": "#2e8b57", "Alto": "#e0a100"},
+            color_discrete_map={"Bajo": "#e74c3c", "Normal": "#2ecc71", "Alto": "#f39c12"},
             labels={"fecha_hora": "", "nivel_agua": ""},
         )
-        fig.update_layout(showlegend=False)
+        fig.update_layout(template="plotly_dark", paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
     with st.expander("Ver las consultas SQL de esta pantalla"):
